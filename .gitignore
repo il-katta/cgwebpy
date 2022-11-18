@@ -1,0 +1,17 @@
+.pybuild
+*.egg-info
+build/
+dist/
+*.pyc
+tmp/
+debian/cgwebpy
+debian/.debhelper
+debian/*.debhelper
+debian/*.substvars
+debian/*-build-stamp
+debian/files
+
+
+
+.venv
+.idea

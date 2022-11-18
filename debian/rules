@@ -1,0 +1,11 @@
+#!/usr/bin/make -f
+
+export PYBUILD_NAME=cgwebpy
+
+%:
+	dh $@ --with python3 --buildsystem=pybuild
+
+install:
+	dh $@ --with=python3 --with=systemd --buildsystem=pybuild
+	install -D -m 655 service/cgwebpy.service  $(CURDIR)/debian/$(PYBUILD_NAME)/etc/systemd/system/
+	install -D -m 655 service/default          $(CURDIR)/debian/$(PYBUILD_NAME)/etc/default/cgwebpy

@@ -1,0 +1,16 @@
+Source: cgwebpy
+Maintainer: Andrea Cattaneo <andrea@runme.sh>
+Section: misc
+Priority: optional
+Standards-Version: 3.9.2
+Build-Depends: debhelper (>= 10),
+               dh-python,
+               python3-all-dev
+
+Package: cgwebpy
+Architecture: any
+Depends: ${python3:Depends},
+         ${python3-systemd:Depends},
+         ${libcgroup1:Depends}
+Description: Cgroup daemon for LAMP server
+ cgwebpy is cgroup daemon for limiting resources of LAMP server users

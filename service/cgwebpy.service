@@ -1,0 +1,13 @@
+[Unit]
+Description=cgweb service
+
+[Service]
+Environment=OPTIONS="--cgroup.group lampusers --memory.max 200MB --cpu.weight 1024"
+EnvironmentFile=-/etc/default/cgwebpy
+ExecStart=/usr/local/bin/cgwebpy $OPTIONS
+
+RestartSec=1
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
