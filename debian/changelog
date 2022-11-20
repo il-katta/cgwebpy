@@ -1,3 +1,9 @@
+cgwebpy (1.0.2-1) UNRELEASED; urgency=low
+
+  * Virtualmin support.
+
+ -- Andrea Cattaneo <andrea@runme.sh>  Fri, 20 Nov 2022 16:43:55 +0100
+
 cgwebpy (1.0.1-1) UNRELEASED; urgency=low
 
   * Initial release.

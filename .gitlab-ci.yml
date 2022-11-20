@@ -1,8 +1,3 @@
-include:
-  # auto devops build
-  - template: 'Jobs/Build.gitlab-ci.yml'
-
-
 stages:
   - build
 

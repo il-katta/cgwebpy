@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='cgwebpy',
-    version='1.0.1',
+    version='1.0.2',
     author='Andrea Cattaneo',
     author_email='andrea.cattaneo@infoesse.it',
     description='cgroup manager for LAMP users',

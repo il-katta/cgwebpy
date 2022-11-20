@@ -1,6 +1,6 @@
 
 PYTHON?=python3
-VERSION=1.0.1
+VERSION=1.0.2
 PKG_VER=1
 build:
 	$(PYTHON) setup.py build
@@ -23,6 +23,7 @@ debian-install: debian-build
 clean:
 	$(PYTHON) setup.py clean
 	rm -rf build cgwebpy.egg-info .pybuild
-	rm -f ../cgwebpy_1.0.1-1_amd64.*
+	rm -rf dist
+	rm -f ../cgwebpy_*.changes ../cgwebpy_*.buildinfo ../cgwebpy_*.deb
 	rm -rf debian/cgwebpy
 .PHONY: clean
