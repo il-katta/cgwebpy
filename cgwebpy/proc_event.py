@@ -4,8 +4,8 @@ import signal
 import socket
 import struct
 import sys
-from typing import List, Tuple, Callable
 from threading import Event
+from typing import List, Tuple, Callable
 
 __all__ = [
     'process_events',
@@ -56,18 +56,21 @@ PROC_EVENT_WHAT = {
     PROC_EVENT_EXIT: "PROC_EVENT_EXIT"
 }
 
-def _init_socket(exit_event: Event , on_signal: Callable = None):
+
+def _init_socket(exit_event: Event, on_signal: Callable = None):
     sock = socket.socket(socket.AF_NETLINK, socket.SOCK_DGRAM, NETLINK_CONNECTOR)
     pid = sock.getsockname()[1]
     sock.bind((pid, CN_IDX_PROC))
+
     def signal_handler(signum, frame):
+        exit_event.set()
+
         try:
             if on_signal:
                 on_signal()
         except:
             pass
 
-        exit_event.set()
         signame = signal.Signals(signum).name
         print(f'Signal {signame} ({signum}) received')
         if sock:
@@ -85,6 +88,7 @@ def _init_socket(exit_event: Event , on_signal: Callable = None):
     if sock.send(data) != len(data):
         raise RuntimeError("socket init failed")
     return sock
+
 
 def process_events(event_types: List[int], on_signal: Callable = None) -> Tuple[str, int]:
     exit_event = Event()
@@ -105,11 +109,9 @@ def process_events(event_types: List[int], on_signal: Callable = None) -> Tuple[
         if msg_type in (NLMSG_ERROR, NLMSG_OVERRUN):
             break
 
-        data = data[16:]
-        #cn_idx, cn_val, cn_seq, cn_ack, cn_len, cn_flags = struct.unpack("=IIIIHH", data[:20])
-        data = data[20:]
+        data = data[16:][20:]
 
-        what,  = struct.unpack("=L", data[:4])
+        what, = struct.unpack("=L", data[:4])
         data = data[16:]
         if what == PROC_EVENT_NONE:
             continue
@@ -118,7 +120,7 @@ def process_events(event_types: List[int], on_signal: Callable = None) -> Tuple[
             if what == PROC_EVENT_FORK:
                 data = data[:16]
 
-            pid,  = struct.unpack("=I", data[:4])
+            pid, = struct.unpack("=I", data[:4])
             what = PROC_EVENT_WHAT.get(what, f"PROC_EVENT_UNKNOWN({what})")
             yield what, pid
     if sock:
