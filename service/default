@@ -1,1 +1,1 @@
-OPTIONS="--cgroup.group lampusers --memory.max 200MB --cpu.weight 1024"
+OPTIONS="--cgroup.group lampusers --controllers memory --memory.max 200MB --controllers cpu --cpu.weight 1024"

@@ -1,4 +1,5 @@
 import ctypes
+import logging
 import os
 from typing import List, Dict
 
@@ -107,7 +108,7 @@ def cgroup_create(group_name: str, controllers: List[str] = None):
     if controllers is None:
         controllers = ["cpu", "memory", "cpuacct"]
     cgroup = cgroup_lib()
-
+    logging.debug(f"cgroup_create: creating group '{group_name}' with {','.join(controllers)} controllers")
     cg = cgroup.cgroup_new_cgroup(c_str(group_name))
     # TODO: test id cg is null and then error
     for controller_name in controllers:
@@ -126,7 +127,6 @@ def cgroup_controllers_ls() -> Dict[str, str]:
     controllers = {}
     while ret == 0:
         controllers[controller.name.decode('UTF-8')] = controller.path.decode('UTF-8')
-
         ret = cgroup.cgroup_get_controller_next(ctypes.byref(handle), ctypes.byref(controller))
     cgroup.cgroup_get_controller_end(ctypes.byref(handle))
     return controllers
@@ -149,11 +149,13 @@ def _cgroup_path(controller: str = "cpu"):
 
 def cgroup_set(group_name: str, limit: str, val: str, controller: str = "cpu"):
     ctr_path = _cgroup_path(controller)
+    logging.debug(f"cgroup_set: setting '{ctr_path}/{group_name}/{limit}' = '{val}'")
     _mkdir(f'{ctr_path}/{group_name}')
     _write(f'{ctr_path}/{group_name}/{limit}', val)
 
 
 def cgroup_assing(group_name: str, pid: int, controller: str = "cpu"):
     ctr_path = _cgroup_path(controller)
-    _mkdir(f'/{ctr_path}/{group_name}')
-    _write(f'/{ctr_path}/{group_name}/cgroup.procs', f"{pid}")
+    logging.debug(f"cgroup_assing: add pid '{pid}' to  '{ctr_path}/{group_name}'")
+    _mkdir(f'{ctr_path}/{group_name}')
+    _write(f'{ctr_path}/{group_name}/cgroup.procs', f"{pid}")

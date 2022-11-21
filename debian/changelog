@@ -1,3 +1,9 @@
+cgwebpy (1.0.3-1) UNRELEASED; urgency=low
+
+  * Improve debug output
+
+ -- Andrea Cattaneo <andrea@runme.sh>  Fri, 21 Nov 2022 11:04:00 +0100
+
 cgwebpy (1.0.2-3) UNRELEASED; urgency=low
 
   * Fix relative import in python code

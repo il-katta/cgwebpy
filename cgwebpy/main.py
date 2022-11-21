@@ -5,9 +5,14 @@ import pwd
 import subprocess
 from typing import List
 
-from . import proc_event
-from . import pyproc
-from .cgroup_utils import *
+try:
+    from . import proc_event
+    from . import pyproc
+    from .cgroup_utils import *
+except ImportError:
+    import proc_event
+    import pyproc
+    from cgroup_utils import *
 
 try:
     import systemd.daemon
@@ -19,16 +24,18 @@ except:
 class CGWeb(object):
 
     def __init__(self):
-        self._logger_init()
         self.args = self._parse_args()
+        self._logger_init(self.args.logging_level)
 
     def run(self):
+        logging.debug(f"creating parent cgroup '{self.args.cgroup_group}'")
         cgroup_create(self.args.cgroup_group, self.args.controllers)
 
         if self.args.virtualmin:
             virtualmin_user = self._virtualmin_users()
             for user in virtualmin_user:
-                self._create_cgroup(user)
+                logging.debug(f"creating cgroup for user '{user}'")
+                self._create_cgroup(user, force=True)
         else:
             virtualmin_user = []
         if systemd:
@@ -95,9 +102,12 @@ class CGWeb(object):
         parser.add_argument('--io.weight', dest='io_weight', default=None, required=False)
         parser.add_argument('--io.max', dest='io_max', default=None, required=False)
         parser.add_argument('--pids.max', dest='pids_max', default=None, required=False)
+        parser.add_argument('--logging.level' ,dest='logging_level', choices=[
+            'CRITICAL','ERROR', 'WARNING', 'INFO', 'DEBUG'
+        ], default='INFO')
         return parser.parse_args()
 
-    def _logger_init(self):
+    def _logger_init(self, level: str = "DEBUG"):
         if systemd:
             log_handlers = [systemd.journal.JournalHandler(), logging.StreamHandler()]
         else:
@@ -106,7 +116,7 @@ class CGWeb(object):
         logging.basicConfig(
             format='%(asctime)s - %(levelname)s - %(message)s',
             encoding='utf-8',
-            level=logging.DEBUG,
+            level=logging.getLevelName(level),
             handlers=log_handlers
         )
 

@@ -2,8 +2,7 @@
 Description=cgweb service
 
 [Service]
-Environment=OPTIONS="--cgroup.group lampusers --memory.max 200MB --cpu.weight 1024"
-EnvironmentFile=-/etc/default/cgwebpy
+EnvironmentFile=/etc/default/cgwebpy
 ExecStart=/usr/bin/cgwebpy $OPTIONS
 
 RestartSec=1
