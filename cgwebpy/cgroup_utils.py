@@ -109,6 +109,7 @@ def cgroup_create(group_name: str, controllers: List[str] = None):
     cgroup = cgroup_lib()
 
     cg = cgroup.cgroup_new_cgroup(c_str(group_name))
+    # TODO: test id cg is null and then error
     for controller_name in controllers:
         cgc = cgroup.cgroup_add_controller(ctypes.c_void_p(cg), c_str(controller_name))
     ret = cgroup.cgroup_create_cgroup(ctypes.c_void_p(cg), 0)

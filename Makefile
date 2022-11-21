@@ -1,7 +1,7 @@
 
 PYTHON?=python3
 VERSION=1.0.2
-PKG_VER=1
+PKG_VER=2
 build:
 	$(PYTHON) setup.py build
 .PHONY: build
@@ -27,3 +27,9 @@ clean:
 	rm -f ../cgwebpy_*.changes ../cgwebpy_*.buildinfo ../cgwebpy_*.deb
 	rm -rf debian/cgwebpy
 .PHONY: clean
+
+uninstall:
+	rm -f /etc/systemd/system/cgwebpy.service
+	$(PYTHON) -m pip uninstall cgwebpy
+
+.PHONY: uninstall
