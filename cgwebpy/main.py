@@ -3,12 +3,11 @@ import argparse
 import logging
 import pwd
 import subprocess
-import sys
 from typing import List
 
-import proc_event
-import pyproc
-from cgroup_utils import *
+from . import proc_event
+from . import pyproc
+from .cgroup_utils import *
 
 try:
     import systemd.daemon

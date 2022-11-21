@@ -1,3 +1,9 @@
+cgwebpy (1.0.2-3) UNRELEASED; urgency=low
+
+  * Fix relative import in python code
+
+ -- Andrea Cattaneo <andrea@runme.sh>  Fri, 21 Nov 2022 10:11:00 +0100
+
 cgwebpy (1.0.2-2) UNRELEASED; urgency=low
 
   * Fix path in service file
