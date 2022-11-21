@@ -1,3 +1,10 @@
+cgwebpy (1.0.4-1) UNRELEASED; urgency=low
+
+  * Fixed typos in cgroup property name
+  * Added flag to enable/disable systemd integration
+
+ -- Andrea Cattaneo <andrea@runme.sh>  Fri, 21 Nov 2022 12:11:00 +0100
+
 cgwebpy (1.0.3-1) UNRELEASED; urgency=low
 
   * Improve debug output

@@ -1,1 +1,1 @@
-OPTIONS="--cgroup.group lampusers --controllers memory --memory.max 200MB --controllers cpu --cpu.weight 1024"
+OPTIONS="--systemd --cgroup.group lampusers --controllers memory --memory.max 200M --controllers cpu --cpu.weight 100"

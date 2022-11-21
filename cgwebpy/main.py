@@ -25,7 +25,7 @@ class CGWeb(object):
 
     def __init__(self):
         self.args = self._parse_args()
-        self._logger_init(self.args.logging_level)
+        self._logger_init(self.args.logging_level, self.args.use_systemd)
 
     def run(self):
         logging.debug(f"creating parent cgroup '{self.args.cgroup_group}'")
@@ -38,7 +38,7 @@ class CGWeb(object):
                 self._create_cgroup(user, force=True)
         else:
             virtualmin_user = []
-        if systemd:
+        if systemd and self.args.use_systemd:
             systemd.daemon.notify('READY=1')
             on_signal = lambda: systemd.daemon.notify('STOPPING=1')
         else:
@@ -102,14 +102,15 @@ class CGWeb(object):
         parser.add_argument('--io.weight', dest='io_weight', default=None, required=False)
         parser.add_argument('--io.max', dest='io_max', default=None, required=False)
         parser.add_argument('--pids.max', dest='pids_max', default=None, required=False)
-        parser.add_argument('--logging.level' ,dest='logging_level', choices=[
-            'CRITICAL','ERROR', 'WARNING', 'INFO', 'DEBUG'
+        parser.add_argument('--logging.level', dest='logging_level', choices=[
+            'CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'
         ], default='INFO')
+        parser.add_argument('--systemd', dest='use_systemd', action='store_true', default=False)
         return parser.parse_args()
 
-    def _logger_init(self, level: str = "DEBUG"):
-        if systemd:
-            log_handlers = [systemd.journal.JournalHandler(), logging.StreamHandler()]
+    def _logger_init(self, level: str = "DEBUG", use_systemd: bool = False):
+        if systemd and use_systemd:
+            log_handlers = [systemd.journal.JournalHandler()]
         else:
             log_handlers = [logging.StreamHandler()]
 
@@ -145,7 +146,7 @@ class CGWeb(object):
             if self.args.memory_low is not None:
                 cgroup_set(cgroup_name, 'memory.low', self.args.memory_low, "memory")
             if self.args.memory_high is not None:
-                cgroup_set(cgroup_name, 'cpu.memory.max', self.args.memory_high, "cpu")
+                cgroup_set(cgroup_name, 'memory.high', self.args.memory_high, "memory")
             if self.args.memory_oom_group is not None:
                 cgroup_set(cgroup_name, 'memory.oom.group', self.args.memory_oom_group, "memory")
             if self.args.memory_swap_high is not None:

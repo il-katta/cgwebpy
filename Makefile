@@ -1,7 +1,8 @@
 
 PYTHON?=python3
-VERSION=1.0.3
+VERSION=1.0.4
 PKG_VER=1
+
 build:
 	$(PYTHON) setup.py build
 .PHONY: build
