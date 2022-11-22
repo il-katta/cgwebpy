@@ -1,3 +1,9 @@
+cgwebpy (1.0.5-1) UNRELEASED; urgency=low
+
+  * Added config file
+
+ -- Andrea Cattaneo <andrea@runme.sh>  Fri, 22 Nov 2022 15:04:00 +0100
+
 cgwebpy (1.0.4-1) UNRELEASED; urgency=low
 
   * Fixed typos in cgroup property name
