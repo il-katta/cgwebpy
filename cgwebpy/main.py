@@ -4,6 +4,7 @@ import configparser
 import logging
 import pwd
 import subprocess
+import threading
 from typing import List, Optional
 
 try:
@@ -23,7 +24,6 @@ except:
 
 
 class CGWeb(object):
-
     def __init__(self):
         self.config = self.read_config()
         self._logger_init(self.config['global']['logging_level'], self.config.getboolean('global', 'systemd'))
@@ -44,34 +44,60 @@ class CGWeb(object):
             on_signal = lambda: systemd.daemon.notify('STOPPING=1')
         else:
             on_signal = None
-        for (what, pid) in proc_event.process_events(
-                [proc_event.PROC_EVENT_FORK, proc_event.PROC_EVENT_EXEC],
-                on_signal
-        ):
+
+        threading.Thread(target=self._classify_all_processes).start()
+
+        proc_gen = proc_event.process_events(
+            [
+                proc_event.PROC_EVENT_FORK,
+                proc_event.PROC_EVENT_EXEC,
+                proc_event.PROC_EVENT_UID,
+                proc_event.PROC_EVENT_GID
+            ],
+            on_signal
+        )
+        for what, pid in proc_gen:
             try:
-                procinfo = pyproc.get_status(pid)
-                if procinfo is None:
-                    # logging.debug(f"process {pid} not found - event: {what}")
-                    continue
-                uid = procinfo['Uid']['real']
-
-                if self.config.getboolean('global', 'virtualmin'):
-                    user = pwd.getpwuid(uid).pw_name
-                    if user not in virtualmin_user:
-                        continue
-                else:
-                    if uid < 1000:
-                        continue
-                    user = pwd.getpwuid(uid).pw_name
-
-                cgroup_name = self._create_cgroup(user=user, force=False)
-                self._cgroup_assign_pid(user=user, pid=pid)
-
-                logging.info(
-                    f"process {procinfo['Name']} ({pid}) for user {user} ( {uid} ) added to cgroup '{cgroup_name}'"
-                )
+                self._process_pid(pid, virtualmin_user=virtualmin_user, what=what)
             except Exception as e:
                 logging.exception(e)
+
+    def _classify_all_processes(self):
+        import os
+
+        if self.config.getboolean('global', 'virtualmin'):
+            virtualmin_user = self._virtualmin_users()
+        else:
+            virtualmin_user = []
+
+        for pid in os.listdir('/proc'):
+            if not pid.isdigit() or not os.path.isdir(os.path.join('/proc', pid)):
+                continue
+
+            self._process_pid(int(pid), virtualmin_user=virtualmin_user)
+
+    def _process_pid(self, pid: int, virtualmin_user: Optional[List[str]] = None, what: Optional[str] = None):
+        procinfo = pyproc.get_status(pid)
+        if procinfo is None:
+            # logging.debug(f"process {pid} not found - event: {what}")
+            return
+        uid = procinfo['Uid']['real']
+
+        if self.config.getboolean('global', 'virtualmin'):
+            user = pwd.getpwuid(uid).pw_name
+            if user not in virtualmin_user:
+                return
+        else:
+            if uid < 1000:
+                return
+            user = pwd.getpwuid(uid).pw_name
+
+        cgroup_name = self._create_cgroup(user=user, force=False)
+        self._cgroup_assign_pid(user=user, pid=pid)
+
+        logging.info(
+            f"process {procinfo['Name']} ({pid}/{what}) for user {user} ({uid}) added to cgroup '{cgroup_name}'"
+        )
 
     def _parse_args(self):
         parser = argparse.ArgumentParser(description='Cgroup daemon for LAMP server')
@@ -144,7 +170,7 @@ class CGWeb(object):
 
     def _cgroup_assign_pid(self, user: str, pid: int):
         cgroup_name = self._cgroup_name(user)
-        cgroup_assing(cgroup_name, pid)
+        cgroup_assing(cgroup_name, pid, self.config['global']['controllers'].split(','))
 
     def _cgroup_name(self, user: Optional[str] = None) -> str:
         if user:

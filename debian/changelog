@@ -1,3 +1,11 @@
+cgwebpy (1.0.6-1) UNRELEASED; urgency=low
+
+  * config file fix
+  * classify all processes at start
+
+ -- Andrea Cattaneo <andrea@runme.sh>  Fri, 22 Nov 2022 20:26:00 +0100
+
+
 cgwebpy (1.0.5-1) UNRELEASED; urgency=low
 
   * Added config file

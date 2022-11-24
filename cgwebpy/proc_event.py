@@ -5,7 +5,7 @@ import socket
 import struct
 import sys
 from threading import Event
-from typing import List, Tuple, Callable
+from typing import List, Tuple, Callable, Generator
 
 __all__ = [
     'process_events',
@@ -90,7 +90,7 @@ def _init_socket(exit_event: Event, on_signal: Callable = None):
     return sock
 
 
-def process_events(event_types: List[int], on_signal: Callable = None) -> Tuple[str, int]:
+def process_events(event_types: List[int], on_signal: Callable = None) -> Generator[Tuple[str, int], None, None]:
     exit_event = Event()
     sock = _init_socket(exit_event, on_signal=on_signal)
 
@@ -116,12 +116,13 @@ def process_events(event_types: List[int], on_signal: Callable = None) -> Tuple[
         if what == PROC_EVENT_NONE:
             continue
         if what in event_types:
+            pid, = struct.unpack("=I", data[:4])
+            what_str = PROC_EVENT_WHAT.get(what, f"PROC_EVENT_UNKNOWN({what})")
+            yield what_str, pid
 
             if what == PROC_EVENT_FORK:
                 data = data[:16]
-
-            pid, = struct.unpack("=I", data[:4])
-            what = PROC_EVENT_WHAT.get(what, f"PROC_EVENT_UNKNOWN({what})")
-            yield what, pid
+                pid, = struct.unpack("=I", data[:4])
+                yield what_str, pid
     if sock:
         sock.close()

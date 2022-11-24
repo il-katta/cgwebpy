@@ -13,6 +13,7 @@ __all__ = [
 
 CG_VALUE_MAX = 100
 FILENAME_MAX = 4096
+CG_CONTROLLER_MAX = 100
 
 
 class struct_control_value(ctypes.Structure):
@@ -23,30 +24,32 @@ class struct_control_value(ctypes.Structure):
     ]
 
 
+class struct_cgroup(ctypes.Structure):
+    pass
+
+
 class struct_cgroup_controller(ctypes.Structure):
     _fields_ = [
         ("name", ctypes.c_char * FILENAME_MAX),
-        ("values", struct_control_value * CG_VALUE_MAX),
-        # ("cgroup", struct_cgroup),
+        # ("values", struct_control_value * CG_VALUE_MAX),
+        ("cgroup", ctypes.POINTER(struct_cgroup)),
         ("cgroup", ctypes.c_void_p),
         ("int", ctypes.c_int),
     ]
 
 
-class struct_cgroup(ctypes.Structure):
-    _fields_ = [
-        ("name", ctypes.c_char * FILENAME_MAX),
-        # ("cgroup_controller", struct_cgroup_controller * CG_VALUE_MAX),
-        ("cgroup_controller", ctypes.c_void_p),
-        ("index", ctypes.c_int),
-        ("tasks_uid", ctypes.c_uint),
-        ("tasks_gid", ctypes.c_uint),
-        ("task_fperm", ctypes.c_uint),
-        ("control_uid", ctypes.c_uint),
-        ("control_gid", ctypes.c_uint),
-        ("control_fperm", ctypes.c_uint),
-        ("control_dperm", ctypes.c_uint),
-    ]
+struct_cgroup._fields_ = [
+    ("name", ctypes.c_char * FILENAME_MAX),
+    ("cgroup_controller", ctypes.POINTER(struct_cgroup_controller) * CG_VALUE_MAX),
+    ("index", ctypes.c_int),
+    ("tasks_uid", ctypes.c_uint),
+    ("tasks_gid", ctypes.c_uint),
+    ("task_fperm", ctypes.c_uint),
+    ("control_uid", ctypes.c_uint),
+    ("control_gid", ctypes.c_uint),
+    ("control_fperm", ctypes.c_uint),
+    ("control_dperm", ctypes.c_uint),
+]
 
 
 class struct_cgroup_mount_point(ctypes.Structure):
@@ -80,6 +83,13 @@ class strunct_cgroup_file_info(ctypes.Structure):
     ]
 
 
+class struct_cgroup_group_spec(ctypes.Structure):
+    _fields_ = [
+        ("path", ctypes.c_char * FILENAME_MAX),
+        ("controllers", ctypes.c_char_p * CG_CONTROLLER_MAX),
+    ]
+
+
 def c_str(val: str):
     return val.encode('utf-8')
 
@@ -95,8 +105,10 @@ def cgroup_lib():
     if ret != 0:
         raise Exception(f"cgroup init failed with code {ret}")
 
-    # cgroup.cgroup_new_cgroup.restype = struct_cgroup
-    cgroup.cgroup_new_cgroup.restype = ctypes.c_void_p
+    # cgroup.cgroup_new_cgroup.restype = ctypes.c_void_p
+    # cgroup.create_cgroup_from_name_value_pairs.restype = ctypes.c_void_p
+    cgroup.cgroup_new_cgroup.restype = ctypes.POINTER(struct_cgroup)
+    cgroup.create_cgroup_from_name_value_pairs.restype = ctypes.POINTER(struct_cgroup)
     return cgroup
 
 
@@ -112,11 +124,11 @@ def cgroup_create(group_name: str, controllers: List[str] = None):
     cg = cgroup.cgroup_new_cgroup(c_str(group_name))
     # TODO: test id cg is null and then error
     for controller_name in controllers:
-        cgc = cgroup.cgroup_add_controller(ctypes.c_void_p(cg), c_str(controller_name))
-    ret = cgroup.cgroup_create_cgroup(ctypes.c_void_p(cg), 0)
+        cgc = cgroup.cgroup_add_controller(cg, c_str(controller_name))
+    ret = cgroup.cgroup_create_cgroup(cg, 0)
     if ret != 0:
         raise Exception(f"cgroup_create_cgroup(...) failed with code {ret}")
-    cgroup.cgroup_free(ctypes.byref(ctypes.c_void_p(cg)))
+    cgroup.cgroup_free(ctypes.byref(cg))
 
 
 def cgroup_controllers_ls() -> Dict[str, str]:
@@ -132,30 +144,36 @@ def cgroup_controllers_ls() -> Dict[str, str]:
     return controllers
 
 
-def _mkdir(path: str):
-    if not os.path.exists(path):
-        os.makedirs(path, exist_ok=True)
-
-
-def _write(path: str, data: str):
-    with open(path, 'w') as fd:
-        fd.write(str(data))
-
-
-def _cgroup_path(controller: str = "cpu"):
-    cc = cgroup_controllers_ls()
-    return cc[controller]
-
-
 def cgroup_set(group_name: str, limit: str, val: str, controller: str = "cpu"):
-    ctr_path = _cgroup_path(controller)
-    logging.debug(f"cgroup_set: setting '{ctr_path}/{group_name}/{limit}' = '{val}'")
-    _mkdir(f'{ctr_path}/{group_name}')
-    _write(f'{ctr_path}/{group_name}/{limit}', val)
+    logging.debug(f"cgroup_set: setting '{group_name}/{limit}' = '{val}'")
+    cgroup = cgroup_lib()
+    name_value = struct_control_value()
+    name_value.name = c_str(limit)
+    name_value.value = c_str(val)
+    name_value.dirty = ctypes.c_bool(False)
+    cgroup.cgroup_init()
+    dst_cgroup = cgroup.cgroup_new_cgroup(c_str(group_name))
+    src_cgroup = cgroup.create_cgroup_from_name_value_pairs(
+        c_str("tmp"), ctypes.byref(name_value), ctypes.c_int(1)
+    )
+    ret = cgroup.cgroup_copy_cgroup(dst_cgroup, src_cgroup)
+    if ret != 0:
+        raise Exception("cgroup_copy_cgroup failed")
+
+    ret = cgroup.cgroup_modify_cgroup(dst_cgroup)
+    if ret != 0:
+        raise Exception("cgroup_modify_cgroup failed")
+
+    cgroup.cgroup_free(ctypes.byref(src_cgroup))
+    cgroup.cgroup_free(ctypes.byref(dst_cgroup))
 
 
-def cgroup_assing(group_name: str, pid: int, controller: str = "cpu"):
-    ctr_path = _cgroup_path(controller)
-    logging.debug(f"cgroup_assing: add pid '{pid}' to  '{ctr_path}/{group_name}'")
-    _mkdir(f'{ctr_path}/{group_name}')
-    _write(f'{ctr_path}/{group_name}/cgroup.procs', f"{pid}")
+def cgroup_assing(group_name: str, pid: int, controllers: List[str]):
+    cgroup = cgroup_lib()
+    ret = cgroup.cgroup_change_cgroup_path(
+        c_str(group_name),
+        ctypes.c_int(pid),
+        (ctypes.c_char_p * CG_CONTROLLER_MAX)(*[c_str(c) for c in controllers])
+    )
+    if ret != 0:
+        raise Exception("cgroup_assing failed")

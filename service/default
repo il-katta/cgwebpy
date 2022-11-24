@@ -1,1 +1,1 @@
-OPTIONS="--systemd --cgroup.group lampusers --controllers memory --memory.max 200M --controllers cpu --cpu.weight 100"
+OPTIONS="--systemd --config /etc/cgweb.conf --virtualmin"
