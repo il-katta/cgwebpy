@@ -1,7 +1,7 @@
 
 PYTHON?=python3
 VERSION=1.0.6
-PKG_VER=1
+PKG_VER=3
 
 build:
 	$(PYTHON) setup.py build

@@ -1,3 +1,4 @@
-cgweb.conf etc
-service/cgwebpy.service lib/systemd/system
-service/default etc/default/cgwebpy
+#!/usr/bin/dh-exec
+cgweb.conf => etc/cgweb.conf
+service/cgwebpy.service => lib/systemd/system/cgwebpy.service
+service/default => etc/default/cgwebpy
