@@ -1,3 +1,9 @@
+cgwebpy (1.0.6-2) UNRELEASED; urgency=low
+
+  * properly manage systemd unit
+
+ -- Andrea Cattaneo <andrea@runme.sh>  Fri, 25 Nov 2022 16:55:00 +0100
+
 cgwebpy (1.0.6-1) UNRELEASED; urgency=low
 
   * config file fix

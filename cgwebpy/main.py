@@ -73,8 +73,10 @@ class CGWeb(object):
         for pid in os.listdir('/proc'):
             if not pid.isdigit() or not os.path.isdir(os.path.join('/proc', pid)):
                 continue
-
-            self._process_pid(int(pid), virtualmin_user=virtualmin_user)
+            try:
+                self._process_pid(int(pid), virtualmin_user=virtualmin_user)
+            except Exception as e:
+                logging.exception(e)
 
     def _process_pid(self, pid: int, virtualmin_user: Optional[List[str]] = None, what: Optional[str] = None):
         procinfo = pyproc.get_status(pid)

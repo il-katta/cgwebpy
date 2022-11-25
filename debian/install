@@ -1,0 +1,3 @@
+cgweb.conf etc
+service/cgwebpy.service lib/systemd/system
+service/default etc/default/cgwebpy
