@@ -12,13 +12,13 @@ install: build
 	install -m 655 service/cgwebpy.service /etc/systemd/system/
 .PHONY: install
 
-../cgwebpy_$(VERSION)-$(PKG_VER)_amd64.deb:
+../cgwebpy_$(VERSION)-$(PKG_VER)_all.deb:
 	dpkg-buildpackage -b -rfakeroot -us -uc
 
-debian-build: ../cgwebpy_$(VERSION)-$(PKG_VER)_amd64.deb
+debian-build: ../cgwebpy_$(VERSION)-$(PKG_VER)_all.deb
 
 debian-install: debian-build
-	dpkg -i ../cgwebpy_$(VERSION)-$(PKG_VER)_amd64.deb
+	dpkg -i ../cgwebpy_$(VERSION)-$(PKG_VER)_all.deb
 .PHONY: debian-install
 
 clean:
