@@ -7,14 +7,9 @@ import subprocess
 import threading
 from typing import List, Optional
 
-try:
-    from . import proc_event
-    from . import pyproc
-    from .cgroup_utils import *
-except ImportError:
-    import proc_event
-    import pyproc
-    from cgroup_utils import *
+from cgwebpy import proc_event
+from cgwebpy import pyproc
+from cgwebpy.cgroup_utils import *
 
 try:
     import systemd.daemon
@@ -48,14 +43,8 @@ class CGWeb(object):
         threading.Thread(target=self._classify_all_processes).start()
 
         proc_gen = proc_event.process_events(
-            [
-                proc_event.PROC_EVENT_FORK,
-                proc_event.PROC_EVENT_EXEC,
-                proc_event.PROC_EVENT_UID,
-                proc_event.PROC_EVENT_GID
-            ],
-            on_signal
-        )
+            [proc_event.PROC_EVENT_FORK, proc_event.PROC_EVENT_EXEC, proc_event.PROC_EVENT_UID,
+                proc_event.PROC_EVENT_GID], on_signal)
         for what, pid in proc_gen:
             try:
                 self._process_pid(pid, virtualmin_user=virtualmin_user, what=what)
@@ -98,28 +87,18 @@ class CGWeb(object):
         self._cgroup_assign_pid(user=user, pid=pid)
 
         logging.info(
-            f"process {procinfo['Name']} ({pid}/{what}) for user {user} ({uid}) added to cgroup '{cgroup_name}'"
-        )
+            f"process {procinfo['Name']} ({pid}/{what}) for user {user} ({uid}) added to cgroup '{cgroup_name}'")
 
     def _parse_args(self):
         parser = argparse.ArgumentParser(description='Cgroup daemon for LAMP server')
         parser.add_argument('--config', dest='config', default='/etc/cgweb.conf', required=True)
-        parser.add_argument(
-            '--controllers',
-            dest='controllers',
-            choices=[
-                # cgroup v2
-                'cpuset', 'cpu', 'io', 'memory', 'hugetlb', 'pids', 'rdma', 'misc',
-                # cgroup v1 only
-                'cpuacct', 'devices', 'freezer', 'net_cls', 'blkio', 'perf_event', 'net_prio', 'hugetlb'
-            ],
-            action='append'
-        )
+        parser.add_argument('--controllers', dest='controllers', choices=[# cgroup v2
+            'cpuset', 'cpu', 'io', 'memory', 'hugetlb', 'pids', 'rdma', 'misc', # cgroup v1 only
+            'cpuacct', 'devices', 'freezer', 'net_cls', 'blkio', 'perf_event', 'net_prio', 'hugetlb'], action='append')
         parser.add_argument('-n', '--cgroup.group', dest='cgroup_group', default='webusers')
         parser.add_argument('--virtualmin', dest='virtualmin', action='store_true')
-        parser.add_argument('--logging.level', dest='logging_level', choices=[
-            'CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'
-        ], default='INFO')
+        parser.add_argument('--logging.level', dest='logging_level',
+                            choices=['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'], default='INFO')
         parser.add_argument('--systemd', dest='use_systemd', action='store_true', default=False)
 
         return parser.parse_args()
@@ -150,12 +129,8 @@ class CGWeb(object):
         else:
             log_handlers = [logging.StreamHandler()]
 
-        logging.basicConfig(
-            format='%(asctime)s - %(levelname)s - %(message)s',
-            encoding='utf-8',
-            level=logging.getLevelName(level),
-            handlers=log_handlers
-        )
+        logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', encoding='utf-8',
+            level=logging.getLevelName(level), handlers=log_handlers)
 
     def _create_cgroup(self, user: Optional[str] = None, force: bool = False):
         cgroup_name = self._cgroup_name(user)
@@ -181,11 +156,9 @@ class CGWeb(object):
             return self.config['global']['cgroup_name']
 
     def _virtualmin_users(self) -> List[str]:
-        return [
-            user for user in
+        return [user for user in
             subprocess.check_output(['virtualmin', 'list-domains', '--user-only']).decode('utf-8').split('\n') if
-            len(user) > 0
-        ]
+            len(user) > 0]
 
 
 def main():
